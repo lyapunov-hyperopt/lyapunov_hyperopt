@@ -8,8 +8,6 @@ import pickle as pkl
 import gc
 
 
-# This code was written by Ryan Vogt, PhD student in the Department of Applied Matematics, University of Washington
-# Contact: ravogt95@uw.edu
 # The purpose of this code is to calculate the Lyapunov spectra of recurrent neural networks.
 
 def calc_Jac(*params, model):
