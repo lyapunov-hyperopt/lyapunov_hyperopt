@@ -17,54 +17,58 @@ vocab_file: store char_to_int and int_to_char dictionaries as a tuple
 data_file: store converted int
 '''
 def text_to_tensor(input_file, vocab_file, data_file):
-    print('Loading text file...')
+	print('Loading text file...')
 
-    try:
-        file = unidecode.unidecode(open(input_file).read())
-    except IOError:
-        print("Could not read file: " + input_file) # fail to open input text file
-        sys.exit()
+	try:
+		file = unidecode.unidecode(open(input_file).read())
+	except IOError:
+		print("Could not read file: " + input_file) # fail to open input text file
+		sys.exit()
 
-    vocab = ''
-    all_chars = string.printable    # all printable characters in python
-    for ch in all_chars:
-        if ch in file:
-            vocab += ch # select characters that appear in the file
+	vocab = ''
+	all_chars = string.printable    # all printable characters in python
+	for ch in all_chars:
+		if ch in file:
+			vocab += ch # select characters that appear in the file
+	#     if 'ê' in file:
+	sp_chs = ['ê','à', 'é', 'ä'] #'\ufeff', '“', '’', '—', '‘', '”', 'á', 'ë', 'í', 'À', 'ó', 'ú', 'è', 'î', 'ô', 'ç', 'â', 'ï', 'ý', 'ö', 'ü', 'Á', 'œ', 'É', 'æ']
+	for ch in sp_chs:
+		vocab += ch
 
-    char_to_int = {}    # mapping from character to int
-    for i in range(len(vocab)):
-        char_to_int[vocab[i]] = i
+	char_to_int = {}    # mapping from character to int
+	for i in range(len(vocab)):
+		char_to_int[vocab[i]] = i
 
-    int_to_char = {}    # mapping from int to character
-    for k, v in char_to_int.items():
-        int_to_char[v] = k
+	int_to_char = {}    # mapping from int to character
+	for k, v in char_to_int.items():
+		int_to_char[v] = k
 
-    # construct a tensor with all data
-    print('Putting data into tensor...')
-    data = torch.ByteTensor(len(file))  # store in into 1D first, then rearrange
-    cache_len = 10000
-    with open(input_file, 'r') as f:
-        currlen = 0
-        while True:
-            raw_data = f.read(cache_len)
-            if not raw_data: # end of file
-                break
-            for i in range(len(raw_data)):
-                data[currlen + i] = char_to_int[raw_data[i]]
-            currlen += len(raw_data)
-    f.close()
+	# construct a tensor with all data
+	print('Putting data into tensor...')
+	data = torch.ByteTensor(len(file))  # store in into 1D first, then rearrange
+	cache_len = 10000
+	with open(input_file, 'r') as f:
+		currlen = 0
+		while True:
+			raw_data = f.read(cache_len)
+			if not raw_data: # end of file
+				break
+			for i in range(len(raw_data)):
+				data[currlen + i] = char_to_int[raw_data[i]]
+			currlen += len(raw_data)
+	f.close()
 
-    # save vocabulary
-    print('Saving ', vocab_file, '...')
-    f = open(vocab_file, 'wb')
-    pickle.dump((char_to_int, int_to_char), f)  # save a tuple
-    f.close()
-
-    # save data tensor
-    print('Saving ', data_file, '...')
-    f = open(data_file, 'wb')
-    pickle.dump(data, f)
-    f.close()
+	# save vocabulary
+	print('Saving ', vocab_file, '...')
+	f = open(vocab_file, 'wb')
+	pickle.dump((char_to_int, int_to_char), f)  # save a tuple
+	f.close()
+	
+	# save data tensor
+	print('Saving ', data_file, '...')
+	f = open(data_file, 'wb')
+	pickle.dump(data, f)
+	f.close()
 
 # create dataset: train, val and test
 def create_dataset(config):
@@ -107,7 +111,7 @@ def create_dataset(config):
     f.close()
 
     batch_size = config.batch_size
-    seq_length = config.seq_length
+    seq_length = config.input_seq_length
     # cutoff the end of the file so that it divides evenly
     length = data.shape[0]  # number of characters
     if length % (batch_size * seq_length) != 0:
@@ -182,5 +186,5 @@ def create_dataset(config):
           (train_batches, val_batches, test_batches))
 
     gc.collect()
-
-    return train_set, val_set, test_set, (char_to_int, int_to_char)
+	
+    return {'train_set':train_set, 'val_set':val_set, 'test_set':test_set, 'char_to_int':char_to_int, 'int_to_char':int_to_char}
